@@ -16,6 +16,7 @@ datasource db {
 model User {
   address       String         @id @unique
   tokenAccounts TokenAccount[]
+  trades        Trade[]
 }
 
 model TokenAccount {
@@ -37,6 +38,8 @@ model Token {
   tokenPrice    TokenPrice[]
   logoURI       String
   tokenAccounts TokenAccount[]
+  tradesIn      Trade[]        @relation("TokenIn")
+  tradesOut     Trade[]        @relation("TokenOut")
 }
 
 model TokenPrice {
@@ -45,4 +48,27 @@ model TokenPrice {
   token     Token    @relation(fields: [tokenMint], references: [mint])
   timestamp DateTime
   price     Float
+}
+
+model Trade {
+  id             Int      @id @default(autoincrement())
+  signature      String   @unique
+  userAddress    String
+  user           User     @relation(fields: [userAddress], references: [address])
+  timestamp      DateTime
+  tokenInMint    String
+  tokenIn        Token    @relation("TokenIn", fields: [tokenInMint], references: [mint])
+  tokenInAmount  Float
+  tokenOutMint   String
+  tokenOut       Token    @relation("TokenOut", fields: [tokenOutMint], references: [mint])
+  tokenOutAmount Float
+  tokenInPrice   Float
+  tokenOutPrice  Float
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userAddress])
+  @@index([timestamp])
+  @@index([tokenInMint])
+  @@index([tokenOutMint])
 }

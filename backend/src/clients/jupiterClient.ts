@@ -22,7 +22,7 @@ export class JupiterClient {
 
     async getAllTokens(): Promise<Token[]> {
         try {
-            const { data } = await this.axiosInstance.get('/all');
+            const { data } = await this.axiosInstance.get('/tokens/v1/tagged/verified');
             return data.map((token: any) => ({
                 mint: token.address,
                 name: token.name,

@@ -93,7 +93,8 @@ export class TokenService {
             const allPrices = await this.birdeyeClient.getHistoricalPrices(
                 token.mint,
                 fromTime,
-                todayUnixTime
+                todayUnixTime,
+                '1D'
             );
 
             const newPrices = allPrices.filter(price => {
@@ -148,6 +149,54 @@ export class TokenService {
     //         console.error('Error fetching current price:', error);    
     //     }
     // }
+
+    async syncAllTokens(): Promise<Token[]> {
+        try {
+            console.log('Starting token sync...');
+            const allTokens = await this.jupiterClient.getAllTokens();
+            console.log(`Found ${allTokens.length} tokens from Jupiter`);
+
+            const batchSize = 100;
+            const savedTokens: Token[] = [];
+
+            // Process tokens in batches to avoid overwhelming the database
+            for (let i = 0; i < allTokens.length; i += batchSize) {
+                const batch = allTokens.slice(i, i + batchSize);
+                console.log(`Processing batch ${i / batchSize + 1} of ${Math.ceil(allTokens.length / batchSize)}`);
+
+                const batchPromises = batch.map(token =>
+                    this.prisma.token.upsert({
+                        where: { mint: token.mint },
+                        update: {
+                            name: token.name || '',
+                            symbol: token.symbol || '',
+                            decimals: token.decimals || 0,
+                            logoURI: token.logoURI || ''
+                        },
+                        create: {
+                            mint: token.mint,
+                            name: token.name || '',
+                            symbol: token.symbol || '',
+                            decimals: token.decimals || 0,
+                            logoURI: token.logoURI || ''
+                        }
+                    }).catch(error => {
+                        console.error(`Error saving token ${token.mint}:`, error);
+                        return null;
+                    })
+                );
+
+                const batchResults = await Promise.all(batchPromises);
+                savedTokens.push(...batchResults.filter((t): t is Token => t !== null));
+            }
+
+            console.log(`Successfully saved ${savedTokens.length} tokens`);
+            return savedTokens;
+        } catch (error) {
+            console.error('Error syncing all tokens:', error);
+            throw error;
+        }
+    }
 }
 
 export const tokenService = new TokenService();

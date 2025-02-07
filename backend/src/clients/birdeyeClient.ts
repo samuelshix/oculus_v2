@@ -59,7 +59,8 @@ export class BirdeyeClient {
     async getHistoricalPrices(
         mintAddress: string,
         fromTime: number,
-        toTime: number
+        toTime: number,
+        type: '1D' | '1H' | '1M'
     ): Promise<{ date: string; price: number }[]> {
         try {
             const { data } = await this.axiosInstance.get<BirdeyeHistoricalResponse>('/defi/history_price', {
